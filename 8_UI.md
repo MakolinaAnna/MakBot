@@ -71,4 +71,4 @@
 
 ## 8.2 Прототип приложения
 
-[PrototypeBalsamiq](UI/Прототипы экранов.bmpr)
+[PrototypeBalsamiq](UI/Прототипы_экранов.bmpr)

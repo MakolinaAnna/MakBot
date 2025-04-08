@@ -1,0 +1,1015 @@
+openapi: 3.0.0
+info:
+  version: '1'
+  title: "MakBot"
+  description: The API для заказа блюд в приложении
+paths:
+  /users/check:
+    post:
+      tags:
+        - Программа лояльности
+      summary: Проверка пользователя по номеру телефона
+      description: Проверка существует ли пользователь в базе данных.
+      operationId: checkUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phoneNumber:
+                  type: string
+                  example: "+1234567890"
+                  description: Номер телефона пользователя
+              required:
+                - phoneNumber
+      responses:
+        '200':
+          description: Пользователь найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Пользователь не найден
+        '500':
+          $ref: '#/components/responses/500'
+  /users/registration:
+    post:
+      tags:
+        - Программа лояльности
+      summary: Регистрация пользователя
+      description: Регистрация нового пользователя в программе лояльности приложения.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phoneNumber:
+                  type: string
+                  example: "+1234567890"
+                  description: Номер телефона пользователя
+                name:
+                  type: string
+                  example: "Иван Иванов"
+                  description: Имя пользователя
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                  description: Электронная почта пользователя
+              required:
+                - phoneNumber
+                - name
+                - email
+      responses:
+        '200':
+          description: Регистрация прошла успешно
+        '409':
+          description: Конфликт - пользователь с таким номером или email уже существует
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EmailExistsError'
+                  - $ref: '#/components/schemas/PhoneExistsError'
+        '500':
+          $ref: '#/components/responses/500'
+
+  /users/login:
+    post:
+      tags:
+        - Программа лояльности
+      summary: Авторизация пользователя
+      description: Авторизация существующего пользователя по номеру телефона.
+      operationId: authUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phoneNumber:
+                  type: string
+                  example: "+1234567890"
+                  description: Номер телефона пользователя
+              required:
+                - phoneNumber
+      responses:
+        '200':
+          description: Авторизация прошла успешно
+        '404':
+          description: Пользователь не найден
+        '500':
+          $ref: '#/components/responses/500'
+
+  /users/sms-code:
+    post:
+      tags:
+        - Программа лояльности
+      summary: Получить СМС-код
+      description: Запрос СМС-кода для подтверждения регистрации или авторизации пользователя.
+      operationId: requestSmsCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phoneNumber:
+                  type: string
+                  example: "+1234567890"
+                  description: Номер телефона пользователя
+              required:
+                - phoneNumber
+      responses:
+        '200':
+          description: СМС-код был успешно отправлен
+        '404':
+          description: Пользователь не найден
+        '500':
+          $ref: '#/components/responses/500'
+
+  /menu:
+    get:
+      tags:
+        - Меню
+      summary: Ознакомление с меню
+      description: Получить список доступных блюд с их описаниями, изображениями и ингредиентами.
+      operationId: getMenu
+      responses:
+        '200':
+          description: Успешный запрос на получение меню
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: Название блюда
+                    description:
+                      type: string
+                      description: Описание блюда
+                    image:
+                      type: string
+                      description: Ссылка на изображение блюда
+                    category:
+                      type: string
+                      description: Категория блюда
+                    ingredients:
+                      type: array
+                      items:
+                        type: string
+                      description: Список ингредиентов блюда
+                    price:
+                      type: number
+                      format: float
+                      description: Цена блюда
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500' 
+
+  /dishes/{id}:
+    get:
+      tags:
+        - Меню
+      summary: Посмотреть блюдо
+      description: Получить детальную информацию о конкретном блюде по его идентификатору.
+      operationId: getDish
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор блюда
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешный запрос на получение информации о блюде
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Название блюда
+                  description:
+                    type: string
+                    description: Описание блюда
+                  image:
+                    type: string
+                    description: Ссылка на изображение блюда
+                  category:
+                    type: string
+                    description: Категория блюда
+                    enum:
+                     - Новинки
+                     - Основное меню
+                     - Напитки
+                  ingredients:
+                    type: array
+                    items:
+                      type: string
+                  price:
+                    type: number
+                    format: float
+                    description: Цена блюда
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+  /dishes/add:
+    post:
+      tags:
+        - Меню
+      summary: Добавить блюдо в корзину
+      description: Добавить блюдо в корзину по его идентификатору.
+      operationId: PostDishAdd
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dishesId:
+                  type: string
+                  example: "1213"
+                  description: Идентификатор блюда
+      responses:
+        '200':
+          description: Успешный запрос на добавление блюда
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Название блюда
+                  description:
+                    type: string
+                    description: Описание блюда
+                  image:
+                    type: string
+                    description: Ссылка на изображение блюда
+                  category:
+                    type: string
+                    description: Категория блюда
+                    enum:
+                     - Новинки
+                     - Основное меню
+                     - Напитки
+                  ingredients:
+                    type: array
+                    items:
+                      type: string
+                  price:
+                    type: number
+                    format: float
+                    description: Цена блюда
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+  /dishes/delete:
+    post:
+      tags:
+        - Меню
+      summary: Удалить блюдо из корзины
+      description: Удалить блюдо из корзины по его идентификатору.
+      operationId: PostDishDelete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dishesId:
+                  type: string
+                  example: "1213"
+                  description: Идентификатор блюда
+      responses:
+        '200':
+          description: Успешный запрос на удаление блюда
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500' 
+  /cart/checkout:
+    post:
+      tags: 
+        - Работа с заказом и корзиной
+      security:
+        - bearerAuth: []
+      summary: Оформить заказ
+      description: Оформляет временный заказ на основе текущего содержимого корзины пользователя, проверяет наличие ингредиентов на производстве. Предлагает замену блюд в случае отсутствия ингредиентов.
+      operationId: checkoutCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CheckoutRequest'
+              example:
+                - dishId: "DI00001"
+                  quantity: 1
+                  comboIngredients:
+                    - IngredientId: "II00001"
+                      qty: 3
+                    - IngredientId: "II00002"
+                      qty: 2
+                - dishId: "DI00002"
+                  quantity: 3  
+      responses:
+        '200':
+          description: Временный заказ успешно оформлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+        '409':
+          description: Отсутствует блюдо
+          content:
+            application/json:
+             schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CheckoutBadResponse'
+                  - $ref: '#/components/schemas/CheckoutQtyResponse'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'      
+  /order/{orderId}:
+    get:
+      tags: 
+        - Работа с заказом и корзиной
+      security:
+        - bearerAuth: []
+      summary: Получить информацию о заказе
+      description: Получить информацию заказе - номере, времени доставки и способе употребления пищи.
+      operationId: orderGet
+      parameters:
+        - $ref: '#/components/parameters/orderId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'  
+    patch:
+      tags: 
+        - Работа с заказом и корзиной
+      security:
+        - bearerAuth: []
+      summary: Обновить информацию о заказе
+      description: Обновляет статус заказа, добавляет информацию о времени доставки и способе употребления пищи.
+      operationId: orderUpdate
+      parameters:
+        - $ref: '#/components/parameters/orderId'
+        - $ref: '#/components/parameters/typeOfDeliveryId'
+        - $ref: '#/components/parameters/timeOfDelivery'
+      responses:
+        '200':
+          description: Заказ успешно обновлён
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'  
+  /orders/payment:
+    post:
+      tags: 
+        - Работа с заказом и корзиной
+      security:
+        - bearerAuth: []
+      summary: Инициировать оплату заказа
+      description: Инициирует процесс оплаты для указанного заказа и возвращает ссылку для перенаправления на платежный шлюз.
+      operationId: initiatePayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '303':
+          description: Перенаправление на платежный шлюз
+          headers:
+            Location:
+              schema:
+                type: string
+                format: url
+              description: URL платежного шлюза
+              example: https://help.reg.ru/support/hosting/redirekty/kak-sdelat-redirekt-na-html
+              # Ссылка на оплату может выглядеть примерно вот так
+              # example: https://paymentgateway.com/checkout?transaction_id=123456789&amount=1000.00&currency=USD&return_url=https://yourwebsite.com/payment-success&cancel_url=https://yourwebsite.com/payment-cancel
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500' 
+
+  /payment-status:
+    post:
+      tags:
+        - Платёжная система
+      summary: Получить статус оплаты
+      description: Получить уведомление о завершении оплаты через webhook от платёжной системы.
+      operationId: paymentStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requestPaymentStatus'
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '400':
+          $ref: '#/components/responses/400'
+  /orders/{orderId}/status:
+    get:
+      tags: 
+        - Управление заказами
+      security:
+        - bearerAuth: []
+      summary: Просмотреть статуса заказа на информационном табло
+      description: Возвращает текущий статус указанного заказа
+      operationId: userOrderStatus
+      parameters:
+        - $ref: '#/components/parameters/orderId'
+      responses:
+        '200':
+          description: Текущий статус заказа
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orderStatus:
+                    type: string
+                    enum:
+                      - Готовится
+                      - Готово
+                    description: Статус заказа
+                  orderId:
+                    type: string
+                    maxLength: 19
+                    example: OD00001       
+                    description: Уникальный идентификатор заказа
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+
+  /bonus/check:  
+    get:
+      tags:
+        - Бонусная система
+      summary: Узнать сколько баллов у пользователя
+      security:
+       - bearerAuth: []
+      description: Получить информацию о бонусных баллах пользователя
+      operationId: getBonusCheck
+      responses:
+        '200':
+          description: Общее количество баллов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalBonus:
+                    type: integer
+                    example: 223
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500' 
+  /bonus/accrue:  
+    post:
+      tags:
+        - Бонусная система
+      summary: Начислить бонусные баллы
+      security:
+       - bearerAuth: []
+      description: Начислить бонусные баллы пользователю за заказ
+      operationId: postBonusAccrue
+      requestBody:
+       required: true
+       content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              phoneNumber:
+                type: string
+                example: "+1234567890"
+                description: Номер телефона пользователя
+              bonus:
+                type: integer
+                example: 223
+            required:
+              - phoneNumber
+      responses:
+        '200':
+          description: Баллы успешно начислены
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'          
+  /bonus/subtract:  
+    post:
+      tags:
+        - Бонусная система
+      summary: Списать бонусные баллы
+      security:
+       - bearerAuth: []
+      description: Списать бонусные баллы пользователя за заказ
+      operationId: postBonusSubtract
+      requestBody:
+       required: true
+       content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              phoneNumber:
+                type: string
+                example: "+1234567890"
+                description: Номер телефона пользователя
+              bonus:
+                type: integer
+                example: 123
+            required:
+              - phoneNumber
+      responses:
+        '200':
+          description: Баллы успешно списаны
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+        '500':
+          $ref: '#/components/responses/500'
+components:
+  schemas:
+    User:
+      description: Заполнение информации о пользователе
+      required:
+       - name
+       - phoneNumber
+       - email
+      type: object
+      properties:
+        name:
+          maxLength: 150
+          type: string
+          description: Имя пользователя
+          nullable: false
+        phoneNumber:
+          maxLength: 200
+          type: string
+          description: Телефон регистрации
+          example: +7 999 888 77 66
+        email:
+          maxLength: 200
+          type: string
+          description: email пользователя
+          nullable: false
+          example: example@email.com
+        status:
+          type: string
+          enum:
+            - Новый
+            - Зарегестрирован
+            - Заблокирован
+    Dishes:
+      description: Блюда
+      required:
+      - dishId
+      - name
+      - description
+      - photo
+      - combo
+      - price
+      - recipeId
+      type: object
+      properties:
+        dishId:
+          type: string
+          description: Уникальный идентификатор блюда
+          maxLength: 19
+          example: DI00001
+        name:
+          type: string
+          description: Наименование блюда
+          maxLength: 50
+          minLength: 2
+          example: "КокаКолла"
+        description:
+          type: string
+          description: Описание блюда
+          maxLength: 250
+          minLength: 2
+          example: "КокаКолла"
+        photo:
+          type: string
+          format: url
+          example: https://static.wikia.nocookie.net/harrypotter/images/c/c5/Pumpkin_Juice_WWHP.jpg/revision/latest/scale-to-width-down/1000?cb=20110529053444
+        combo:
+          type: boolean
+          description: Сборное блюдо 
+          example: true
+        proteins:
+          type: number
+          format: float
+          description: Количество протеинов
+          example: 120.1
+        fats:
+          type: number
+          format: float
+          description: Количество жиров
+          example: 23.7
+        carbohydrates:
+          type: number
+          format: float
+          description: Количество углеводов
+          example: 22.3
+        calorie:
+          type: number
+          format: float
+          description: Количество каллорий
+          example: 220.8
+        price:
+          type: number
+          format: float
+          description: Цена блюда
+          example: 485.23
+        recipeId:
+          type: string
+          description: Уникальный идентификатор рецепта
+          maxLength: 19
+          example: RI00001        
+    Ingredients:
+      description: Ингредиенты
+      required:
+      - IngredientId
+      - qty
+      type: object
+      properties:
+          IngredientId:
+            type: string
+            description: Уникальный идентификатор ингредиента
+            maxLength: 19
+            example: II00001
+          qty:
+            type: integer
+            description: Количество ингредиентов для приготовления блюда
+            example: 3  
+    Order:
+      description: Информация о заказе получаемая клиентом в приложении
+      properties:
+        orderId:
+          type: string
+          maxLength: 19
+          example: OD00001       
+          description: Уникальный идентификатор заказа
+        typeOfDelivery:
+          type: string
+          maxLength: 50
+          example: "в ресторане"
+          description: Способ употребления пищи
+        timeOfDelivery:
+          type: string
+          format: date-time
+          example: "2024-10-15T10:00:00Z"
+        OrderDateTime:
+          type: string
+          format: date-time
+          example: "2024-10-15T10:00:00Z"
+        ammount:
+          type: number
+          description: Стоимость
+          format: float
+          example: 50.4
+        discount:
+          type: number
+          description: Скидка
+          format: float
+          example: 5.3
+        total:
+          type: number
+          description: Итоговая стоимость
+          format: float
+          example: 45.1
+    EmailExistsError:
+          type: object
+          properties:
+            message:
+              example: "Пользователь с таким email уже существует"
+    PhoneExistsError:
+          type: object
+          properties:
+            message:
+              example: "Пользователь с таким номером телефона уже существует"
+    CheckoutResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          maxLength: 19
+          example: OD00001       
+          description: Уникальный идентификатор заказа
+        message:
+          type: string
+          maxLength: 250
+          description: Сообщение о статусе
+          example: OK   
+    CheckoutBadResponse:
+      type: object
+      properties:
+        MissingDishId:
+          type: string
+          description: Уникальный идентификатор блюда ингредиентов которого недостаточно на производстве
+          maxLength: 19
+          example: MD00001
+        MissingDishName:
+          type: string
+          description: Наименование блюда
+          maxLength: 50
+          minLength: 2
+          example: "КокаКолла"
+        replacementDishes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dishes'
+          description: Блюда на замену      
+        message:
+            type: string
+            maxLength: 250
+            description: Ингредиенты для блюда отсутствуют на производстве выберите блюда на замену
+    CheckoutQtyResponse:
+     type: object
+     properties:
+        dishId:
+          type: string
+          description: Уникальный идентификатор блюда, количество которого ограничено на складе
+          maxLength: 19
+          example: DI00001
+        dishName:
+          type: string
+          description: Наименование блюда
+          maxLength: 50
+          minLength: 2
+          example: "КокаКолла"
+        quantity:
+          type: integer
+          description: Количество блюд доступных для заказа
+          example: 3  
+        replacementDishes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dishes'
+          description: Блюда на замену        
+        message:
+            type: string
+            maxLength: 250
+            description: Количество ингредиентов для блюд ограничено, доступно для заказа N блюд
+    CheckoutRequest:
+      type: object
+      required:
+        - dishId
+        - quantity
+      properties:
+        dishId:
+          type: string
+          description: Уникальный идентификатор блюда
+          maxLength: 19
+          example: DI00001
+        quantity:
+          type: integer
+          maximum: 29
+          description: Количество добавляемых блюд
+          example: 1
+        comboIngredients:
+          type: array
+          description: Ингредиенты для комбо-блюда
+          items:
+            $ref: '#/components/schemas/Ingredients'
+    PaymentRequest:
+      type: object
+      required:
+        - tempOrderId
+      properties:
+        tempOrderId:
+          type: string
+          maxLength: 19
+          example: OD00001       
+          description: Уникальный идентификатор заказа
+    requestPaymentStatus:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: Уникальный идентификатор заказа
+          maxLength: 150
+          minLength: 2
+        paymentStatus:
+          type: string
+          enum: [completed, failed]
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Код ошибки
+              example: "INSUFFICIENT_FUNDS"
+            message:
+              type: string
+              description: Описание ошибки
+              example: "Недостаточно средств на счете"
+            details:
+              type: string
+              description: Подробности ошибки
+              example: "Платеж был отклонен, так как на счету недостаточно средств."
+            transactionId:
+              type: string
+              description: Идентификатор транзакции в платёжной системе
+      required:
+        - orderId
+        - paymentStatus
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - token
+            properties:
+              token:
+                type: string
+                example: 6CKmM8eWBK6VIRrVlioBkZBAHbSannV39qDN+c0S/sQSf8UZNq9Th1lFkLNLTGlJ
+    '404':
+      description: Что-то пошло не так...
+      content:
+        application/json:
+          schema:
+            required:
+            - code
+            - errorId
+            - messageEn
+            - messageRu
+            type: object
+            properties:
+              errorId:
+                type: integer
+              code:
+                maximum: 599
+                minimum: 400
+                type: integer
+              messageRu:
+                maxLength: 500
+                minLength: 1
+                pattern: "([А-Яа-я0-9-]+)"
+                type: string
+                nullable: false
+              messageEn:
+                maxLength: 500
+                minLength: 1
+                pattern: "([A-Za-z0-9-]+)"
+                type: string
+                nullable: false
+            description: Текст сообщения об ошибке
+    '400':
+      description: Не верный запрос
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "User not authorized"
+    '401':
+      description: Пользователь не авторизован
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "User not authorized"
+    '500':
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Bad Request"
+  parameters:
+    orderId:
+      name: orderId
+      in: path
+      description: Уникальный идентификатор заказа
+      required: true
+      schema:
+          type: string
+          maxLength: 19
+          example: OD00001       
+          description: Уникальный идентификатор заказа
+    typeOfDeliveryId:
+      name: typeOfDeliveryId
+      in: query
+      description: Уникальный ID способов употребления пищи
+      required: false
+      schema:
+        type: string
+        maxLength: 19
+        example: "TOD00001"
+    timeOfDelivery:
+      name: timeOfDelivery
+      in: query
+      description: Время готовности заказа
+      required: false
+      schema:
+        type: string
+        format: date-time
+        example: "2024-10-15T10:00:00Z"  
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://app.swaggerhub.com/apis/annamakolina/MakBot/1.0.0
